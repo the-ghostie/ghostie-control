@@ -107,10 +107,69 @@
             border: 1px solid #ddd;
             border-radius: 4px;
         }
+        .meta-data {
+            background: #e9ecef;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .meta-data p {
+            margin: 5px 0;
+        }
+        .save-button {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .save-button button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .save-button button:hover {
+            background-color: #0056b3;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: none;
+            font-size: 16px;
+        }
+        .loader {
+            display: none;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007BFF;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="meta-data">
+            <p><strong>User Under Control:</strong> Child-1</p>
+            <p><strong>IP Address:</strong> 192.168.0.1</p>
+            <p><strong>Status:</strong> Connected <button onclick="disconnect()">Disconnect</button></p>
+            <p><strong>Last Updated:</strong> 5 minutes ago</p>
+        </div>
+
         <h1>Parental Control Dashboard</h1>
 
         <!-- Section 1: Commonly Used Applications -->
@@ -174,6 +233,13 @@
                 </div>
             </div>
         </div>
+
+        <div class="save-button">
+            <button onclick="saveChanges()">Save Changes</button>
+        </div>
+
+        <div class="loader" id="loader"></div>
+        <div class="toast" id="toast">Changes saved successfully!</div>
     </div>
 
     <script>
@@ -207,6 +273,29 @@
                 document.getElementById('censor-ass').checked = state.censorAss;
                 document.getElementById('censor-feet').checked = state.censorFeet;
             }
+        }
+
+        // Show loader and toast
+        function saveChanges() {
+            const loader = document.getElementById('loader');
+            const toast = document.getElementById('toast');
+
+            loader.style.display = 'block';
+
+            setTimeout(() => {
+                loader.style.display = 'none';
+                toast.style.display = 'block';
+
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 3000);
+            }, 2000);
+
+            saveState();
+        }
+
+        function disconnect() {
+            alert('Disconnected successfully!');
         }
 
         // Add event listeners to save state on change
