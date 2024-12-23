@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parental Control App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Parental Control Dashboard</h1>
+
+        <div class="section">
+            <label for="app-controls">Enable/Disable Apps:</label>
+            <div id="app-controls">
+                <input type="checkbox" id="app-facebook"> Facebook<br>
+                <input type="checkbox" id="app-youtube"> YouTube<br>
+                <input type="checkbox" id="app-instagram"> Instagram<br>
+            </div>
+        </div>
+
+        <div class="section">
+            <label for="child-message">Send Message to Child:</label>
+            <input type="text" id="child-message" placeholder="Type your message here">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+
+        <div class="section">
+            <label for="time-restrictions">Set Time Restrictions:</label>
+            <button onclick="applyRestrictions()">Apply Restrictions</button>
+        </div>
+
+        <div class="section">
+            <label>Action Log:</label>
+            <ul id="action-log"></ul>
+        </div>
+    </div>
+
+    <script>
+        function sendMessage() {
+            const message = document.getElementById('child-message').value;
+            if (message) {
+                logAction(`Message sent to child: "${message}"`);
+                document.getElementById('child-message').value = '';
+            } else {
+                alert('Please enter a message before sending.');
+            }
+        }
+
+        function applyRestrictions() {
+            const enabledApps = Array.from(document.querySelectorAll('#app-controls input'))
+                .filter(input => input.checked)
+                .map(input => input.id.replace('app-', ''));
+
+            logAction(`Restrictions applied. Enabled apps: ${enabledApps.length ? enabledApps.join(', ') : 'None'}`);
+        }
+
+        function logAction(action) {
+            const log = document.getElementById('action-log');
+            const li = document.createElement('li');
+            li.textContent = action;
+            log.appendChild(li);
+        }
+    </script>
+</body>
+</html>
