@@ -175,5 +175,52 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Save state to localStorage
+        function saveState() {
+            const state = {
+                facebook: document.getElementById('app-facebook').checked,
+                youtube: document.getElementById('app-youtube').checked,
+                instagram: document.getElementById('app-instagram').checked,
+                censorType: document.getElementById('censor-type').value,
+                censorSize: document.getElementById('censor-size').value,
+                censorFace: document.getElementById('censor-face').checked,
+                censorChest: document.getElementById('censor-chest').checked,
+                censorAss: document.getElementById('censor-ass').checked,
+                censorFeet: document.getElementById('censor-feet').checked
+            };
+            localStorage.setItem('parentalControlState', JSON.stringify(state));
+        }
+
+        // Load state from localStorage
+        function loadState() {
+            const state = JSON.parse(localStorage.getItem('parentalControlState'));
+            if (state) {
+                document.getElementById('app-facebook').checked = state.facebook;
+                document.getElementById('app-youtube').checked = state.youtube;
+                document.getElementById('app-instagram').checked = state.instagram;
+                document.getElementById('censor-type').value = state.censorType;
+                document.getElementById('censor-size').value = state.censorSize;
+                document.getElementById('censor-face').checked = state.censorFace;
+                document.getElementById('censor-chest').checked = state.censorChest;
+                document.getElementById('censor-ass').checked = state.censorAss;
+                document.getElementById('censor-feet').checked = state.censorFeet;
+            }
+        }
+
+        // Add event listeners to save state on change
+        function setupEventListeners() {
+            document.querySelectorAll('input, select').forEach(element => {
+                element.addEventListener('change', saveState);
+            });
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            setupEventListeners();
+        });
+    </script>
 </body>
 </html>
