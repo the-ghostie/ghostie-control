@@ -116,6 +116,10 @@
         .meta-data p {
             margin: 5px 0;
         }
+        .connected {
+            color: green;
+            font-weight: bold;
+        }
         .save-button {
             display: flex;
             justify-content: center;
@@ -129,8 +133,14 @@
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
+            opacity: 0.6;
+            cursor: not-allowed;
         }
-        .save-button button:hover {
+        .save-button button.enabled {
+            opacity: 1;
+            cursor: pointer;
+        }
+        .save-button button:hover:enabled {
             background-color: #0056b3;
         }
         .toast {
@@ -164,37 +174,19 @@
 <body>
     <div class="container">
         <div class="meta-data">
-            <p><strong>User Under Control:</strong> Child-1</p>
-            <p><strong>IP Address:</strong> 192.168.0.1</p>
-            <p><strong>Status:</strong> Connected <button onclick="disconnect()">Disconnect</button></p>
-            <p><strong>Last Updated:</strong> 5 minutes ago</p>
+            <p><strong>User Under Control:</strong> midget-dam-new</p>
+            <p><strong>UUID:</strong> 550e8400-e29b-41d4-a716-446655440000</p>
+            <p><strong>Status:</strong> <span id="status" class="connected">Connected</span></p>
+            <p><strong>Last Updated:</strong> <span id="last-updated"></span></p>
         </div>
 
-        <h1>Parental Control Dashboard</h1>
+        <h1>Ghostie Control Dashboard</h1>
 
         <!-- Section 1: Commonly Used Applications -->
         <div class="section">
-            <h2>Commonly Used Applications</h2>
-            <div class="list-item">
-                <span>Facebook</span>
-                <label class="switch">
-                    <input type="checkbox" id="app-facebook">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="list-item">
-                <span>YouTube</span>
-                <label class="switch">
-                    <input type="checkbox" id="app-youtube">
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="list-item">
-                <span>Instagram</span>
-                <label class="switch">
-                    <input type="checkbox" id="app-instagram">
-                    <span class="slider"></span>
-                </label>
+            <h2>Active Applications</h2>
+            <div id="app-list">
+                <!-- App items will be generated dynamically -->
             </div>
         </div>
 
@@ -215,6 +207,11 @@
                 <input type="number" id="censor-size" placeholder="Enter size in %" min="0">
             </div>
 
+            <div class="input-group">
+                <label for="censor-text">Censor Text</label>
+                <input type="text" id="censor-text" placeholder="Enter censor text">
+            </div>
+
             <div>
                 <p>Body Parts to Censor:</p>
                 <div class="checkbox-group">
@@ -228,6 +225,15 @@
                         <input type="checkbox" id="censor-ass"> Ass
                     </label>
                     <label>
+                        <input type="checkbox" id="censor-belly"> Belly
+                    </label>
+                    <label>
+                        <input type="checkbox" id="censor-vagina"> Vagina
+                    </label>
+                    <label>
+                        <input type="checkbox" id="censor-legs"> Legs
+                    </label>
+                    <label>
                         <input type="checkbox" id="censor-feet"> Feet
                     </label>
                 </div>
@@ -235,48 +241,88 @@
         </div>
 
         <div class="save-button">
-            <button onclick="saveChanges()">Save Changes</button>
+            <button id="saveButton" class="enabled">Save Changes</button>
         </div>
 
         <div class="loader" id="loader"></div>
         <div class="toast" id="toast">Changes saved successfully!</div>
     </div>
 
-    <script>
-        // Save state to localStorage
-        function saveState() {
-            const state = {
-                facebook: document.getElementById('app-facebook').checked,
-                youtube: document.getElementById('app-youtube').checked,
-                instagram: document.getElementById('app-instagram').checked,
-                censorType: document.getElementById('censor-type').value,
-                censorSize: document.getElementById('censor-size').value,
-                censorFace: document.getElementById('censor-face').checked,
-                censorChest: document.getElementById('censor-chest').checked,
-                censorAss: document.getElementById('censor-ass').checked,
-                censorFeet: document.getElementById('censor-feet').checked
-            };
-            localStorage.setItem('parentalControlState', JSON.stringify(state));
+    <script type="module">
+        // Import Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js";
+        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/9.6.11/firebase-database.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAkxS7vLXxuhUTWcNxYUqJelPOGmrD96jM",
+            authDomain: "ghostie-b7475.firebaseapp.com",
+            databaseURL: "https://ghostie-b7475-default-rtdb.firebaseio.com",
+            projectId: "ghostie-b7475",
+            storageBucket: "ghostie-b7475.firebasestorage.app",
+            messagingSenderId: "981037216185",
+            appId: "1:981037216185:web:f9768d37d0470a88ed8668",
+            measurementId: "G-NSHKLX10LP"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        const saveButton = document.getElementById('saveButton');
+        const appListElement = document.getElementById('app-list');
+
+        const apps = [
+            "Airbnb", "Discord", "Dropbox", 
+            "Duolingo", "Facebook", "FoodPanda", "Gmail", "Goodreads", "Google Calendar", 
+            "Google Drive", "Google Maps", "Google Photos", "Inshot", "Instagram", 
+            "LinkedIn", "Lyft", "Netflix", "Outlook", "PayPal", "Pinterest", 
+            "Quora", "Reddit", "Shazam", "Slack", "Snapchat", "Spotify", 
+            "Telegram", "TikTok", "Trello", "Tumblr", "Uber", "Venmo", "Waze", 
+            "WhatsApp", "X", "Yango", "YouTube", "Zoom"
+        ];
+
+        let isChanged = true;
+
+        function populateAppList() {
+            apps.forEach(app => {
+                const listItem = document.createElement('div');
+                listItem.classList.add('list-item');
+
+                const label = document.createElement('span');
+                label.textContent = app;
+                listItem.appendChild(label);
+
+                const switchContainer = document.createElement('label');
+                switchContainer.classList.add('switch');
+
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.id = `app-${app.toLowerCase().replace(/\s+/g, '-')}`;
+                input.addEventListener('change', () => enableSaveButton());
+                switchContainer.appendChild(input);
+
+                const slider = document.createElement('span');
+                slider.classList.add('slider');
+                switchContainer.appendChild(slider);
+
+                listItem.appendChild(switchContainer);
+                appListElement.appendChild(listItem);
+            });
         }
 
-        // Load state from localStorage
-        function loadState() {
-            const state = JSON.parse(localStorage.getItem('parentalControlState'));
-            if (state) {
-                document.getElementById('app-facebook').checked = state.facebook;
-                document.getElementById('app-youtube').checked = state.youtube;
-                document.getElementById('app-instagram').checked = state.instagram;
-                document.getElementById('censor-type').value = state.censorType;
-                document.getElementById('censor-size').value = state.censorSize;
-                document.getElementById('censor-face').checked = state.censorFace;
-                document.getElementById('censor-chest').checked = state.censorChest;
-                document.getElementById('censor-ass').checked = state.censorAss;
-                document.getElementById('censor-feet').checked = state.censorFeet;
-            }
+        function updateLastUpdated() {
+            const randomMinutes = Math.floor(Math.random() * 18) + 3;
+            document.getElementById('last-updated').textContent = `${randomMinutes} minutes ago`;
         }
 
-        // Show loader and toast
-        function saveChanges() {
+        function enableSaveButton() {
+            isChanged = true;
+            saveButton.classList.add('enabled');
+            saveButton.disabled = false;
+        }
+
+        saveButton.addEventListener('click', () => {
             const loader = document.getElementById('loader');
             const toast = document.getElementById('toast');
 
@@ -292,23 +338,81 @@
             }, 2000);
 
             saveState();
-        }
+            saveButton.classList.remove('enabled');
+            saveButton.disabled = true;
+            isChanged = true;
+        });
 
-        function disconnect() {
-            alert('Disconnected successfully!');
-        }
+        function saveState() {
+            const state = {
+                apps: {},
+                censorType: document.getElementById('censor-type').value,
+                censorSize: document.getElementById('censor-size').value,
+                censorText: document.getElementById('censor-text').value,
+                bodyParts: {
+                    face: document.getElementById('censor-face').checked,
+                    chest: document.getElementById('censor-chest').checked,
+                    belly: document.getElementById('censor-belly').checked,
+                    legs: document.getElementById('censor-legs').checked,
+                    vagina: document.getElementById('censor-vagina').checked,
+                    ass: document.getElementById('censor-ass').checked,
+                    feet: document.getElementById('censor-feet').checked,
+                }
+            };
 
-        // Add event listeners to save state on change
-        function setupEventListeners() {
-            document.querySelectorAll('input, select').forEach(element => {
-                element.addEventListener('change', saveState);
+            apps.forEach(app => {
+                const input = document.getElementById(`app-${app.toLowerCase().replace(/\s+/g, '-')}`);
+                state.apps[app] = input.checked;
             });
+
+            set(ref(database, 'parentalControl/'), state)
+                .then(() => {
+                    console.log("Data saved successfully.");
+                })
+                .catch(error => {
+                    console.error("Error saving data: ", error);
+                });
         }
 
-        // Initialize page
+        function loadState() {
+            const dbRef = ref(database);
+            get(child(dbRef, 'parentalControl/'))
+                .then(snapshot => {
+                    if (snapshot.exists()) {
+                        const state = snapshot.val();
+
+                        document.getElementById('censor-type').value = state.censorType || "black-bars";
+                        document.getElementById('censor-size').value = state.censorSize || "50";
+                        document.getElementById('censor-text').value = state.censorText || "";
+
+                        document.getElementById('censor-face').checked = state.bodyParts?.face || false;
+                        document.getElementById('censor-chest').checked = state.bodyParts?.chest || false;
+                        document.getElementById('censor-belly').checked = state.bodyParts?.belly || false;
+                        document.getElementById('censor-vagina').checked = state.bodyParts?.vagina || false;
+                        document.getElementById('censor-legs').checked = state.bodyParts?.legs || false;
+                        document.getElementById('censor-ass').checked = state.bodyParts?.ass || false;
+                        document.getElementById('censor-feet').checked = state.bodyParts?.feet || false;
+
+                        Object.keys(state.apps || {}).forEach(app => {
+                            const input = document.getElementById(`app-${app.toLowerCase().replace(/\s+/g, '-')}`);
+                            if (input) input.checked = state.apps[app];
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Error loading data: ", error);
+                });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            populateAppList();
             loadState();
-            setupEventListeners();
+            updateLastUpdated();
+
+            // Enable save button for form input changes
+            document.querySelectorAll('input, select').forEach(element => {
+                element.addEventListener('change', enableSaveButton);
+            });
         });
     </script>
 </body>
